@@ -1,0 +1,14 @@
+version: 2.1
+orbs:
+  # Slack通知をするためのorb
+  # https://circleci.com/orbs/registry/orb/circleci/slack
+  slack: circleci/slack@2.4.0
+
+workflows:
+  my-workflow:
+    jobs:
+      # Deployの準備ができたことをSlackに通知する
+      # approveしたときのみdeployされる
+      - slack/approval-notification:
+          message: Pending approval
+
