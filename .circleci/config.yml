@@ -4,6 +4,33 @@ orbs:
   # https://circleci.com/orbs/registry/orb/circleci/slack
   slack: circleci/slack@2.4.0
 
+commands:
+  ecs-deploy:
+    parameters:
+      region:
+        description: "ECS region"
+        type: string
+        default: ap-northeast-1
+      cluster_name:
+        description: "ECS cluster name"
+        type: string
+      service_name:
+        description: "ECS service name"
+        type: string
+      image:
+        description: "hydra docker image with tag"
+        type: string
+      aws_access_key_id:
+        description: "AWS access key id"
+        type: env_var_name
+      aws_secret_access_key:
+        description: "AWS secret access key"
+        type: env_var_name
+    steps:
+      - deploy:
+          command: echo "deploy production"
+
+
 jobs:
   build:
     docker:
@@ -19,14 +46,22 @@ jobs:
     docker:
       - image: cibuilds/base
     steps:
-      - deploy:
-          command: echo "deploy staging"
+      - ecs-deploy:
+          cluster_name: my-ecs-stg-cluster
+          service_name: my-ecs-stg-service
+          image: my-image
+          aws_access_key_id: AWS_ACCESS_KEY_ID
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
   deploy-production:
     docker:
       - image: cibuilds/base
     steps:
-      - deploy:
-          command: echo "deploy production"
+      - ecs-deploy:
+          cluster_name: my-ecs-prod-cluster
+          service_name: my-ecs-prod-service
+          image: my-image
+          aws_access_key_id: AWS_ACCESS_KEY_ID
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
 
 
 workflows:
