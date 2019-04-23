@@ -5,63 +5,67 @@ orbs:
   slack: circleci/slack@2.4.0
 
 jobs:
-  start:
+  build:
     docker:
       - image: cibuilds/base
     steps:
-      - run: echo "Start the workflow"
-  static-checks:
+      - run: echo "builds docker image"
+  push:
     docker:
       - image: cibuilds/base
     steps:
-      - run: echo "exec static check"
-  bundle-install:
+      - run: echo "push docker image"
+  deploy:
     docker:
       - image: cibuilds/base
+    parameters:
+      region:
+        description: "ECS region"
+        type: string
+        default: ap-northeast-1
+      cluster_name:
+        description: "ECS cluster name"
+        type: string
+      service_name:
+        description: "ECS service name"
+        type: string
+      image:
+        description: "hydra docker image with tag"
+        type: string
+      aws_access_key_id:
+        description: "AWS access key id"
+        type: env_var_name
+      aws_secret_access_key:
+        description: "AWS secret access key"
+        type: env_var_name
     steps:
-      - run: echo "exec bundle install"
-  yarn-install:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - run: echo "exec yarn install"
-  jest:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - run: echo "exec jest"
-  rspec:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - run: echo "exec rspec"
+      - deploy:
+          command: echo "deploy"
 
 
 workflows:
   my-workflow:
     jobs:
-      - start:
+      - build:
           filters:
             branches:
-              only: master
-      - static-checks:
+              only: docker
+      - push:
           requires:
-            - start
-      - yarn-install:
+            - build
+      - deploy:
+          cluster_name: my-ecs-stg-cluster
+          service_name: my-ecs-stg-service
+          image: my-image
+          aws_access_key_id: AWS_ACCESS_KEY_ID
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
           requires:
-            - start
-      - bundle-install:
+            - push
+      - deploy:
+          cluster_name: my-ecs-prod-cluster
+          service_name: my-ecs-prod-service
+          image: my-image
+          aws_access_key_id: AWS_ACCESS_KEY_ID
+          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
           requires:
-            - start
-      - jest:
-          requires:
-            - yarn-install
-      - rspec:
-          requires:
-            - yarn-install
-            - bundle-install
-      # Deployの準備ができたことをSlackに通知する
-      # approveしたときのみdeployされる
-#      - slack/approval-notification:
-#          message: Pending approval
-
+            - push
