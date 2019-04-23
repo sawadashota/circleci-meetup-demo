@@ -4,11 +4,58 @@ orbs:
   # https://circleci.com/orbs/registry/orb/circleci/slack
   slack: circleci/slack@2.4.0
 
+jobs:
+  static-checks:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "exec static check"
+  bundle-install:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "exec bundle install"
+  yarn-install:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "exec yarn install"
+  jest:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "exec jest"
+  rspec:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "exec rspec"
+
+
 workflows:
   my-workflow:
     jobs:
+      - static-checks:
+          filters:
+            branches:
+              only: master
+      - yarn-install:
+          filters:
+            branches:
+              only: master
+      - bundle-install:
+          filters:
+            branches:
+              only: master
+      - jest:
+          requires:
+            - yarn-install
+      - rspec:
+          requires:
+            - yarn-install
+            - bundle-install
       # Deployの準備ができたことをSlackに通知する
       # approveしたときのみdeployされる
-      - slack/approval-notification:
-          message: Pending approval
+#      - slack/approval-notification:
+#          message: Pending approval
 
