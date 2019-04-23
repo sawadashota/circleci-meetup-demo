@@ -1,82 +1,21 @@
 version: 2.1
-orbs:
-  # Slack通知をするためのorb
-  # https://circleci.com/orbs/registry/orb/circleci/slack
-  slack: circleci/slack@2.4.0
-
-commands:
-  ecs-deploy:
-    parameters:
-      region:
-        description: "ECS region"
-        type: string
-        default: ap-northeast-1
-      cluster_name:
-        description: "ECS cluster name"
-        type: string
-      service_name:
-        description: "ECS service name"
-        type: string
-      image:
-        description: "hydra docker image with tag"
-        type: string
-      aws_access_key_id:
-        description: "AWS access key id"
-        type: env_var_name
-      aws_secret_access_key:
-        description: "AWS secret access key"
-        type: env_var_name
-    steps:
-      - deploy:
-          command: echo "deploy production"
-
 
 jobs:
-  build:
+  check-config-pack:
+    resource_class: small
     docker:
-      - image: cibuilds/base
+      # https://github.com/CircleCI-Public/circleci-cli
+      - image: circleci/circleci-cli:alpine
     steps:
-      - run: echo "builds docker image"
-  push:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - run: echo "push docker image"
-  deploy-staging:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - ecs-deploy:
-          cluster_name: my-ecs-stg-cluster
-          service_name: my-ecs-stg-service
-          image: my-image
-          aws_access_key_id: AWS_ACCESS_KEY_ID
-          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
-  deploy-production:
-    docker:
-      - image: cibuilds/base
-    steps:
-      - ecs-deploy:
-          cluster_name: my-ecs-prod-cluster
-          service_name: my-ecs-prod-service
-          image: my-image
-          aws_access_key_id: AWS_ACCESS_KEY_ID
-          aws_secret_access_key: AWS_SECRET_ACCESS_KEY
+      - checkout
+      - run:
+          name: CircleCIの設定ファイルを再生成して、コミットされているファイルと差分がないかチェック
+          command: |
+            # circleci config pack .circleci/src > .circleci/config.yml
+            git diff --exit-code
 
 
 workflows:
   my-workflow:
     jobs:
-      - build:
-          filters:
-            branches:
-              only: docker
-      - push:
-          requires:
-            - build
-      - deploy-staging:
-          requires:
-            - push
-      - deploy-production:
-          requires:
-            - push
+      - check-config-pack
