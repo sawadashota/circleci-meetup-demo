@@ -5,6 +5,11 @@ orbs:
   slack: circleci/slack@2.4.0
 
 jobs:
+  start:
+    docker:
+      - image: cibuilds/base
+    steps:
+      - run: echo "Start the workflow"
   static-checks:
     docker:
       - image: cibuilds/base
@@ -35,18 +40,19 @@ jobs:
 workflows:
   my-workflow:
     jobs:
+      - start:
+          filters:
+            branches:
+              only: master
       - static-checks:
-          filters:
-            branches:
-              only: master
+          requires:
+            - start
       - yarn-install:
-          filters:
-            branches:
-              only: master
+          requires:
+            - start
       - bundle-install:
-          filters:
-            branches:
-              only: master
+          requires:
+            - start
       - jest:
           requires:
             - yarn-install
